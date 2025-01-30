@@ -8,6 +8,20 @@ export default {
     AdminMenu,
     ProductoForm,
   },
+  computed: {
+    // Método para obtener el inventario de un producto
+    getInventarioAtributos() {
+      return (productoId) => {
+        return (
+          this.inventarioProductos[productoId] || {
+            colores: [],
+            tamanos: [],
+            longitudes: [],
+          }
+        )
+      }
+    },
+  },
   data() {
     return {
       productos: [],
@@ -18,125 +32,204 @@ export default {
       colores: [],
       tamanos: [],
       longitudes: [],
+      inventarioProductos: {},
       mostrarFormulario: false,
       productoEditado: null,
       activeIndex: {},
-      loading: false,
-      error: null,
     }
   },
   methods: {
     async obtenerProductos() {
-      this.loading = true
-      this.error = null
       try {
-        const { data } = await axios.get('/api/productos')
-        this.productos = data.data.map((producto) => ({
-          ...producto,
-          inventario: [],
-          opcionesUnicas: { colores: [], tamanos: [], longitudes: [] },
-        }))
-
-        await this.obtenerInventarios()
-      } catch (error) {
-        console.error('Error al obtener los productos:', error)
-        this.error = 'Error al obtener los productos. Inténtelo de nuevo más tarde.'
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async obtenerInventarios() {
-      if (!this.productos.length) return
-      try {
-        const productosIds = this.productos.map((p) => p.id)
-        const { data: inventarios } = await axios.get('/api/inventario', {
-          params: { productos: productosIds },
-        })
-
-        this.productos.forEach((producto) => {
-          producto.inventario = inventarios.filter((inv) => inv.producto_id === producto.id)
-
-          producto.opcionesUnicas = {
-            colores: [
-              ...new Set(producto.inventario.map((item) => item.variacion?.color?.descripcion)),
-            ].filter(Boolean),
-            tamanos: [
-              ...new Set(producto.inventario.map((item) => item.variacion?.tamano?.descripcion)),
-            ].filter(Boolean),
-            longitudes: [
-              ...new Set(producto.inventario.map((item) => item.variacion?.longitud?.descripcion)),
-            ].filter(Boolean),
+        const response = await axios.get('/api/productos')
+        this.productos = response.data.data.map((producto) => {
+          return {
+            ...producto,
+            imagenes: producto.imagenes || [],
           }
         })
+
+        // Obtener el inventario para cada producto
+        await Promise.all(
+          this.productos.map((producto) => this.obtenerInventarioProducto(producto.id)),
+        )
+
+        // Inicializa el índice activo para cada producto
+        this.productos.forEach((producto) => {
+          this.activeIndex[producto.id] = 0
+        })
       } catch (error) {
-        console.error('Error al obtener inventario:', error)
+        console.error('Error al obtener los productos:', error)
       }
     },
+    // método para obtener el inventario específico de un producto
+    async obtenerInventarioProducto(productoId) {
+      try {
+        const response = await axios.get(`/api/inventario/producto/${productoId}`)
+        const inventario = response.data
 
+        // Agrupar las variaciones por color, tamaño y longitud, con sus respectivas cantidades y precios
+        this.inventarioProductos[productoId] = inventario.map((item) => ({
+          color: {
+            id: item.variacion.color.id,
+            descripcion: item.variacion.color.descripcion,
+          },
+          tamano: {
+            id: item.variacion.tamano.id,
+            descripcion: item.variacion.tamano.descripcion,
+          },
+          longitud: {
+            id: item.variacion.longitud.id,
+            descripcion: item.variacion.longitud.descripcion,
+          },
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+        }))
+      } catch (error) {
+        console.error(`Error al obtener el inventario del producto ${productoId}:`, error)
+        this.inventarioProductos[productoId] = []
+      }
+    },
+    getInventarioCantidadYPrecio(productoId, colorId) {
+      const inventario = this.inventarioProductos[productoId] || []
+      const variacion = inventario.find((item) => item.color.id === colorId)
+
+      if (variacion) {
+        return `${variacion.cantidad} unidades - S/${variacion.precio_unitario.toFixed(2)}`
+      }
+      return '-'
+    },
+    // Métodos helper para obtener las descripciones
+    getColorDescripcion(colorId) {
+      const color = this.colores.find((c) => c.id === colorId)
+      return color ? color.descripcion : ''
+    },
+    getTamanoDescripcion(tamanoId) {
+      const tamano = this.tamanos.find((t) => t.id === tamanoId)
+      return tamano ? tamano.descripcion : ''
+    },
+    getLongitudDescripcion(longitudId) {
+      const longitud = this.longitudes.find((l) => l.id === longitudId)
+      return longitud ? longitud.descripcion : ''
+    },
+    // Métodos para obtener datos
     async obtenerOpciones() {
       await Promise.all([
+        this.obtenerColores(),
+        this.obtenerTamanos(),
+        this.obtenerLongitudes(),
         this.obtenerCategorias(),
         this.obtenerUnidadesMedida(),
         this.obtenerUbicaciones(),
         this.obtenerProveedores(),
       ])
     },
+    async obtenerColores() {
+      try {
+        const response = await axios.get('/api/colores')
+        this.colores = response.data
+      } catch (error) {
+        console.error('Error al obtener los colores:', error)
+      }
+    },
+    async obtenerLongitudes() {
+      try {
+        const response = await axios.get('/api/longitudes')
+        this.longitudes = response.data
+      } catch (error) {
+        console.error('Error al obtener las longitudes:', error)
+      }
+    },
+    async obtenerTamanos() {
+      try {
+        const response = await axios.get('/api/tamanos')
+        this.tamanos = response.data
+      } catch (error) {
+        console.error('Error al obtener los tamaños:', error)
+      }
+    },
     async obtenerCategorias() {
       try {
-        const { data } = await axios.get('/api/categoriaproductos')
-        this.categorias = data
+        const response = await axios.get('/api/categoriaproductos') // Asegúrate de que la ruta sea correcta
+        this.categorias = response.data
       } catch (error) {
-        console.error('Error al obtener categorías:', error)
+        console.error('Error al obtener las categorías:', error)
       }
     },
     async obtenerUnidadesMedida() {
       try {
-        const { data } = await axios.get('/api/unidadesmedidas')
-        this.unidadesMedida = data
+        const response = await axios.get('/api/unidadesmedidas')
+        this.unidadesMedida = response.data
       } catch (error) {
-        console.error('Error al obtener unidades de medida:', error)
+        console.error('Error al obtener las unidades de medida:', error)
       }
     },
     async obtenerProveedores() {
       try {
-        const { data } = await axios.get('/api/proveedores')
-        this.proveedores = data
+        const response = await axios.get('/api/proveedores')
+        this.proveedores = response.data
       } catch (error) {
-        console.error('Error al obtener proveedores:', error)
+        console.error('Error al obtener los proveedores:', error)
       }
     },
     async obtenerUbicaciones() {
       try {
-        const { data } = await axios.get('/api/ubicaciones')
-        this.ubicaciones = data
+        const response = await axios.get('/api/ubicaciones') // Asegúrate de que la ruta sea correcta
+        this.ubicaciones = response.data
       } catch (error) {
-        console.error('Error al obtener ubicaciones:', error)
+        console.error('Error al obtener las ubicaciones:', error)
       }
     },
-
+    getCategoriaNombre(id) {
+      const categoria = this.categorias.find((c) => c.id === id)
+      return categoria ? categoria.descripcion : 'Desconocida'
+    },
+    getUnidadMedidaNombre(id) {
+      const unidad = this.unidadesMedida.find((u) => u.id === id)
+      return unidad ? unidad.descripcion : 'Desconocida'
+    },
+    getProveedorNombre(id) {
+      const proveedor = this.proveedores.find((p) => p.id === id)
+      return proveedor ? proveedor.razon_social : 'Desconocida'
+    },
+    getUbicacionNombre(id) {
+      const ubicacion = this.ubicaciones.find((u) => u.id === id)
+      return ubicacion ? ubicacion.descripcion : 'Desconocida'
+    },
     nextImage(productoId) {
-      this.activeIndex[productoId] =
-        (this.activeIndex[productoId] + 1) %
-        (this.productos.find((p) => p.id === productoId)?.imagenes.length || 1)
+      if (this.productos.length > 0) {
+        const producto = this.productos.find((p) => p.id === productoId)
+        if (producto) {
+          this.activeIndex[productoId] =
+            (this.activeIndex[productoId] + 1) % producto.imagenes.length
+        }
+      }
     },
     prevImage(productoId) {
-      this.activeIndex[productoId] =
-        (this.activeIndex[productoId] -
-          1 +
-          (this.productos.find((p) => p.id === productoId)?.imagenes.length || 1)) %
-        (this.productos.find((p) => p.id === productoId)?.imagenes.length || 1)
+      if (this.productos.length > 0) {
+        const producto = this.productos.find((p) => p.id === productoId)
+        if (producto) {
+          this.activeIndex[productoId] =
+            (this.activeIndex[productoId] - 1 + producto.imagenes.length) % producto.imagenes.length
+        }
+      }
     },
-
+    // Métodos de gestión del formulario
     mostrarFormularioCreacion() {
       this.productoEditado = null
       this.mostrarFormulario = true
     },
     mostrarFormularioEdicion(producto) {
-      this.productoEditado = { ...producto }
+      this.productoEditado = {
+        ...JSON.parse(JSON.stringify(producto)),
+        colores: this.inventarioProductos[producto.id]?.colores || [],
+        tamanos: this.inventarioProductos[producto.id]?.tamanos || [],
+        longitudes: this.inventarioProductos[producto.id]?.longitudes || [],
+      }
       this.mostrarFormulario = true
     },
     async onGuardar() {
+      // Este método ahora solo maneja la actualización de la lista y cierre del formulario
       await this.obtenerProductos()
       this.cerrarFormulario()
     },
@@ -156,6 +249,7 @@ export default {
     },
   },
 
+  //cargar listas
   mounted() {
     this.obtenerProductos()
     this.obtenerOpciones()
@@ -192,15 +286,12 @@ export default {
           <tr v-for="producto in productos" :key="producto.id">
             <td>{{ producto.id }}</td>
             <td>{{ producto.nombre }}</td>
-            <td>{{ producto.categoria.descripcion }}</td>
+            <td>{{ getCategoriaNombre(producto.categoria_producto_id) }}</td>
             <td>
               <template v-if="getInventarioAtributos(producto.id).colores.length">
-                <span
-                  v-for="colorId in getInventarioAtributos(producto.id).colores"
-                  :key="colorId"
-                  class="badge bg-secondary me-1"
-                >
-                  {{ getColorDescripcion(colorId) }}
+                <span v-for="colorId in getInventarioAtributos(producto.id).colores" :key="colorId">
+                  {{ getColorDescripcion(colorId) }} -
+                  {{ getInventarioCantidadYPrecio(producto.id, colorId) }}
                 </span>
               </template>
               <span v-else>-</span>
@@ -210,9 +301,9 @@ export default {
                 <span
                   v-for="longitudId in getInventarioAtributos(producto.id).longitudes"
                   :key="longitudId"
-                  class="badge bg-secondary me-1"
                 >
-                  {{ getLongitudDescripcion(longitudId) }}
+                  {{ getColorDescripcion(longitudId) }} -
+                  {{ getInventarioCantidadYPrecio(producto.id, longitudId) }}
                 </span>
               </template>
               <span v-else>-</span>
@@ -222,15 +313,15 @@ export default {
                 <span
                   v-for="tamanoId in getInventarioAtributos(producto.id).tamanos"
                   :key="tamanoId"
-                  class="badge bg-info me-1"
                 >
-                  {{ getTamanoDescripcion(tamanoId) }}
+                  {{ getColorDescripcion(tamanoId) }} -
+                  {{ getInventarioCantidadYPrecio(producto.id, tamanoId) }}
                 </span>
               </template>
               <span v-else>-</span>
             </td>
-            <td>{{ producto.unidad_medida.descripcion }}</td>
-            <td>{{ producto.proveedor.razon_social }}</td>
+            <td>{{ getUnidadMedidaNombre(producto.unidad_medida_id) }}</td>
+            <td>{{ getProveedorNombre(producto.proveedor_id) }}</td>
             <td>S/{{ producto.precio_unitario_maximo.toFixed(2) || 0 }}</td>
             <td>
               <template v-if="producto.total_stock >= 500">
@@ -254,12 +345,12 @@ export default {
                 </span>
               </template>
             </td>
-            <td>{{ producto.ubicacion.descripcion }}</td>
+            <td>{{ getUbicacionNombre(producto.ubicacion_id) }}</td>
             <td>
               <div v-if="producto.imagenes.length > 0">
                 <div class="carousel-container">
                   <img
-                    :src="`http://localhost:8080/${producto.imagenes[activeIndex[producto.id]]?.url}`"
+                    :src="`http://localhost:8000/${producto.imagenes[activeIndex[producto.id]]?.url}`"
                     class="d-block w-100"
                     alt="Imagen del producto"
                     style="max-height: 100px; object-fit: cover"
@@ -273,8 +364,8 @@ export default {
               </div>
             </td>
             <td>
-              <span v-if="producto.estado === 'ACTIVO'" class="badge bg-success">ACTIVO</span>
-              <span v-else class="badge bg-danger">INACTIVO</span>
+              <span v-if="producto.estado === 'Activo'" class="badge bg-success">Activo</span>
+              <span v-else class="badge bg-danger">Inactivo</span>
             </td>
             <td>
               <button @click="mostrarFormularioEdicion(producto)" class="btn btn-primary btn-sm">

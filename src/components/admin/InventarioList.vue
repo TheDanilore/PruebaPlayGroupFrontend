@@ -12,12 +12,19 @@ export default {
     }
   },
   methods: {
-    async obtenerInventario() {
+    async obtenerInventario(page = 1) {
       try {
-        const response = await axios.get('/api/inventario')
-        this.inventario = response.data
+        const response = await axios.get(`/api/inventario?page=${page}`)
+        this.inventario = response.data.data
+        this.currentPage = response.data.current_page
+        this.totalPages = response.data.last_page
       } catch (error) {
         console.error('Error al cargar el inventario:', error)
+      }
+    },
+    cambiarPagina(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.obtenerInventario(page)
       }
     },
   },
@@ -106,6 +113,24 @@ export default {
             </tr>
           </tbody>
         </table>
+        <!-- Paginación -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <button
+            @click="cambiarPagina(currentPage - 1)"
+            :disabled="currentPage <= 1"
+            class="pagination-btn"
+          >
+            Anterior
+          </button>
+          <span class="pagination-info">Página {{ currentPage }} de {{ totalPages }}</span>
+          <button
+            @click="cambiarPagina(currentPage + 1)"
+            :disabled="currentPage >= totalPages"
+            class="pagination-btn"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -122,5 +147,39 @@ td {
   padding: 10px;
   border: 1px solid #ddd;
   text-align: left;
+}
+
+/* Estilos para los botones de paginación */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination-btn {
+  padding: 10px 20px;
+  margin: 0 10px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.pagination-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.pagination-btn:hover {
+  background-color: #0056b3;
+}
+
+.pagination-info {
+  font-size: 16px;
+  margin: 0 10px;
 }
 </style>
