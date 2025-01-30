@@ -70,51 +70,45 @@ export default {
     async obtenerInventarioProducto(productoId) {
       try {
         const response = await axios.get(`/api/inventario/producto/${productoId}`)
+        console.log("El inventario recibido es:", response.data)
+
         const inventario = response.data
 
         // Transformar la respuesta en un formato más manejable
-        this.inventarioProductos[productoId] = inventario.map((item) => ({
-          color: item.variacion?.color || null,
-          tamano: item.variacion?.tamano || null,
-          longitud: item.variacion?.longitud || null,
-          cantidad: item.cantidad,
-          precio_unitario: item.precio_unitario,
-        }))
+        const colores = new Set()
+        const tamanos = new Set()
+        const longitudes = new Set()
+
+        const detallesInventario = inventario.map((item) => {
+          if (item.variacion?.color) colores.add(JSON.stringify(item.variacion.color))
+          if (item.variacion?.tamano) tamanos.add(JSON.stringify(item.variacion.tamano))
+          if (item.variacion?.longitud) longitudes.add(JSON.stringify(item.variacion.longitud))
+
+          return {
+            color: item.variacion?.color || null,
+            tamano: item.variacion?.tamano || null,
+            longitud: item.variacion?.longitud || null,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio_unitario,
+          }
+        })
+
+        this.inventarioProductos, productoId, {
+          colores: [...colores].map((c) => JSON.parse(c)),
+          tamanos: [...tamanos].map((t) => JSON.parse(t)),
+          longitudes: [...longitudes].map((l) => JSON.parse(l)),
+          detalles: detallesInventario,
+        }
       } catch (error) {
         console.error(`Error al obtener el inventario del producto ${productoId}:`, error)
-        this.inventarioProductos[productoId] = []
+        this.inventarioProductos[productoId] = {
+          colores: [],
+          tamanos: [],
+          longitudes: [],
+          detalles: []
+        }
       }
     },
-    getInventarioCantidadYPrecio(productoId, colorId, tamanoId, longitudId) {
-      const inventario = this.inventarioProductos[productoId] || []
-
-      const variacion = inventario.find(
-        (item) =>
-          (colorId ? item.color?.id === colorId : true) &&
-          (tamanoId ? item.tamano?.id === tamanoId : true) &&
-          (longitudId ? item.longitud?.id === longitudId : true)
-      )
-
-      if (variacion) {
-        return `${variacion.cantidad} unidades - S/${variacion.precio_unitario.toFixed(2)}`
-      }
-      return '-'
-    },
-    // Métodos helper para obtener las descripciones
-    getColorDescripcion(colorId) {
-      const color = this.colores.find((c) => c.id === colorId)
-      return color ? color.descripcion : ''
-    },
-    getTamanoDescripcion(tamanoId) {
-      const tamano = this.tamanos.find((t) => t.id === tamanoId)
-      return tamano ? tamano.descripcion : ''
-    },
-    getLongitudDescripcion(longitudId) {
-      const longitud = this.longitudes.find((l) => l.id === longitudId)
-      return longitud ? longitud.descripcion : ''
-    },
-
-
     nextImage(productoId) {
       if (this.productos.length > 0) {
         const producto = this.productos.find((p) => p.id === productoId)
@@ -202,35 +196,44 @@ export default {
           <tr v-for="producto in productos" :key="producto.id">
             <td>{{ producto.id }}</td>
             <td>{{ producto.nombre }}</td>
-            <td>{{ producto.categoria.descripcion }}</td>
+            <td>{{ producto.categoria?.descripcion || '-' }}</td>
+
+            <!-- Colores -->
             <td>
-              <template v-if="getInventarioAtributos(producto.id).colores.length">
-                <span v-for="color in getInventarioAtributos(producto.id).colores" :key="color.id">
-                  {{ getColorDescripcion(color.id) }}
+              <!-- <template v-if="inventarioAtributos[producto.id]?.colores?.length">
+                <span v-for="color in inventarioAtributos[producto.id].colores" :key="color">
+                  {{ getColorDescripcion(color) }}
                 </span>
               </template>
-              <span v-else>-</span>
+<span v-else>-</span> -->
             </td>
+
+            <!-- Longitudes -->
             <td>
-              <template v-if="getInventarioAtributos(producto.id).longitudes.length">
-                <span v-for="longitudId in getInventarioAtributos(producto.id).longitudes" :key="longitudId">
-                  {{ getLongitudDescripcion(longitudId) }}
+              <!-- <template v-if="inventarioAtributos[producto.id]?.longitudes?.length">
+                <span v-for="longitud in inventarioAtributos[producto.id].longitudes" :key="longitud">
+                  {{ getLongitudDescripcion(longitud) }}
                 </span>
               </template>
-              <span v-else>-</span>
+              <span v-else>-</span> -->
             </td>
+
+            <!-- Tamaños -->
             <td>
-              <template v-if="getInventarioAtributos(producto.id).tamanos.length">
-                <span v-for="tamanoId in getInventarioAtributos(producto.id).tamanos" :key="tamanoId">
-                  {{ getTamanoDescripcion(tamanoId) }}
+              <!-- <template v-if="inventarioAtributos[producto.id]?.tamanos?.length">
+                <span v-for="tamano in inventarioAtributos[producto.id].tamanos" :key="tamano">
+                  {{ getTamanoDescripcion(tamano) }}
                 </span>
               </template>
-              <span v-else>-</span>
+              <span v-else>-</span> -->
             </td>
-            <td>{{ producto.unidad_medida.descripcion }}</td>
-            <td>{{ producto.proveedor.razon_social }}</td>
-            <!-- <td> S/{{ producto.precio_unitario_maximo.toFixed(2) || 0 }} </td> -->
-            <td></td>
+
+            <td>{{ producto.unidad_medida?.descripcion || '-' }}</td>
+            <td>{{ producto.proveedor?.razon_social || '-' }}</td>
+
+            <td>S/ {{ producto.precio_unitario_maximo?.toFixed(2) || '0.00' }}</td>
+
+            <!-- Stock con badges de colores -->
             <td>
               <template v-if="producto.inventario.cantidad >= 500">
                 <span class="badge bg-success me-1">
@@ -253,7 +256,7 @@ export default {
                 </span>
               </template>
             </td>
-            <td>{{ producto.ubicacion.descripcion }}</td>
+            <td>{{ producto.ubicacion?.descripcion || '-' }}</td>
             <td>
               <div v-if="producto.imagenes.length > 0">
                 <div class="carousel-container">
@@ -268,8 +271,9 @@ export default {
               </div>
             </td>
             <td>
-              <span v-if="producto.estado === 'ACTIVO'" class="badge bg-success">ACTIVO</span>
-              <span v-else class="badge bg-danger">INACTIVO</span>
+              <span :class="producto.estado === 'ACTIVO' ? 'badge bg-success' : 'badge bg-danger'">
+                {{ producto.estado }}
+              </span>
             </td>
             <td>
               <button @click="mostrarFormularioEdicion(producto)" class="btn btn-primary btn-sm">
