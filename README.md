@@ -60,3 +60,4 @@ npm run lint
 ### Vistas (Resultado)
 ![image](https://github.com/user-attachments/assets/d854e40e-c8fd-4701-84b2-82a3b80215dc)
 
+![image](https://github.com/user-attachments/assets/e15f31bb-58b8-4d79-8b24-15765c53b36e)
