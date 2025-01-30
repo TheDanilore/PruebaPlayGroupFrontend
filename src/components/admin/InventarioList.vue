@@ -9,13 +9,18 @@ export default {
   data() {
     return {
       inventario: [],
+      currentPage: 1,
+      totalPages: 1,
+      perPage: 5, //valor predeterminado para perPage
     }
   },
   methods: {
     async obtenerInventario(page = 1) {
       try {
-        const response = await axios.get(`/api/inventario?page=${page}`)
+        const response = await axios.get(`/api/inventario?page=${page}&per_page=${this.perPage}`)
+
         this.inventario = response.data.data
+
         this.currentPage = response.data.current_page
         this.totalPages = response.data.last_page
       } catch (error) {
@@ -113,6 +118,7 @@ export default {
             </tr>
           </tbody>
         </table>
+
         <!-- Paginación -->
         <div v-if="totalPages > 1" class="pagination-container">
           <button
@@ -130,6 +136,17 @@ export default {
           >
             Siguiente
           </button>
+        </div>
+
+        <!-- Selector de Resultados por Página -->
+        <div class="mb-3 mt-3">
+          <label for="perPage" class="form-label">Resultados por página:</label>
+          <select v-model="perPage" @change="obtenerInventario" id="perPage" class="form-select">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
         </div>
       </div>
     </div>
@@ -181,5 +198,10 @@ td {
 .pagination-info {
   font-size: 16px;
   margin: 0 10px;
+}
+
+/* Estilo para el selector de resultados por página */
+.mb-3 {
+  margin-bottom: 15px;
 }
 </style>

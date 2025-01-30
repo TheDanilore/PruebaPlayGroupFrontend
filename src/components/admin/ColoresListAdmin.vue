@@ -14,15 +14,28 @@ export default {
       colores: [],
       mostrarFormulario: false,
       colorEditada: null,
+      totalPages: 1,
+      perPage: 5, //valor predeterminado para perPage
     }
   },
   methods: {
-    async obtenerColores() {
+    async obtenerColores(page = 1) {
       try {
-        const response = await axios.get('/api/colores') // Asegúrate de que la ruta sea correcta
-        this.colores = response.data
+        const response = await axios.get(`/api/colores?page=${page}&per_page=${this.perPage}`)
+
+        // Asignar las  desde la respuesta de la API
+        this.colores = response.data.data
+
+        // Asignar las propiedades de paginación
+        this.currentPage = response.data.current_page
+        this.totalPages = response.data.last_page
       } catch (error) {
         console.error('Error al obtener los colores:', error)
+      }
+    },
+    cambiarPagina(page) {
+      if (page >= 1 && page <= this.totalPages) {
+        this.obtenerColores(page)
       }
     },
     mostrarFormularioCreacion() {
@@ -87,13 +100,10 @@ export default {
           <tr v-for="color in colores" :key="color.id">
             <td>{{ color.id }}</td>
             <td>
-              <span
-                class="color-label inline-block px-3 py-1 rounded-full text-sm font-semibold"
-                :style="{
-                  backgroundColor: color.codigo_hex || '#FFFFFF',
-                  color: getTextColor(color.codigo_hex || '#FFFFFF'),
-                }"
-              >
+              <span class="color-label inline-block px-3 py-1 rounded-full text-sm font-semibold" :style="{
+                backgroundColor: color.codigo_hex || '#FFFFFF',
+                color: getTextColor(color.codigo_hex || '#FFFFFF'),
+              }">
                 {{ color.descripcion }}
               </span>
             </td>
@@ -107,18 +117,38 @@ export default {
           </tr>
         </tbody>
       </table>
+
+      <!-- Paginación -->
+      <div v-if="totalPages > 1" class="pagination-container">
+        <button @click="cambiarPagina(currentPage - 1)" :disabled="currentPage <= 1" class="pagination-btn">
+          Anterior
+        </button>
+        <span class="pagination-info">Página {{ currentPage }} de {{ totalPages }}</span>
+        <button @click="cambiarPagina(currentPage + 1)" :disabled="currentPage >= totalPages" class="pagination-btn">
+          Siguiente
+        </button>
+      </div>
     </div>
+
+    <!-- Selector de Resultados por Página -->
+    <div class="mb-3 mt-3">
+      <label for="perPage" class="form-label">Resultados por página:</label>
+      <select v-model="perPage" @change="obtenerColores" id="perPage" class="form-select">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+
     <div class="mt-4 text-center">
       <button @click="mostrarFormularioCreacion" class="btn btn-success">Añadir Nuevo Color</button>
     </div>
 
+
     <!-- Formulario para crear/editar categoria -->
-    <ColoresForm
-      v-if="mostrarFormulario"
-      :colorEditado="colorEditado"
-      @guardar="onGuardar"
-      @cerrar="cerrarFormulario"
-    />
+    <ColoresForm v-if="mostrarFormulario" :colorEditado="colorEditado" @guardar="onGuardar"
+      @cerrar="cerrarFormulario" />
   </div>
 </template>
 
@@ -162,5 +192,44 @@ h2 {
 
 .mt-4 {
   margin-top: 1.5rem;
+}
+
+/* Estilos para los botones de paginación */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination-btn {
+  padding: 10px 20px;
+  margin: 0 10px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.pagination-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.pagination-btn:hover {
+  background-color: #0056b3;
+}
+
+.pagination-info {
+  font-size: 16px;
+  margin: 0 10px;
+}
+
+/* Estilo para el selector de resultados por página */
+.mb-3 {
+  margin-bottom: 15px;
 }
 </style>
