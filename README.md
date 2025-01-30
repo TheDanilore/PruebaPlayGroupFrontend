@@ -1,4 +1,5 @@
-# gestion_producto_frontend
+# Prueba Play Group Frontend
+
 
 This template should help get you started developing with Vue 3 in Vite.
 
@@ -55,3 +56,7 @@ npm run test:e2e
 ```sh
 npm run lint
 ```
+
+### Vistas (Resultado)
+![image](https://github.com/user-attachments/assets/d854e40e-c8fd-4701-84b2-82a3b80215dc)
+
