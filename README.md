@@ -78,4 +78,8 @@ npm run lint
 ### Guardar/Editar
 ![image](https://github.com/user-attachments/assets/5face09b-3496-4bf7-97d0-b7ec2fd4e850)
 
+![image](https://github.com/user-attachments/assets/bcc9c64a-ac30-4a8e-98f3-db29948288d8)
+
 ![image](https://github.com/user-attachments/assets/752cefe7-3b22-493b-b07b-256b19ea8cdb)
+
+![image](https://github.com/user-attachments/assets/e323da04-8546-4f29-a5d6-1b2ca1c538f9)
