@@ -57,8 +57,8 @@ npm run test:e2e
 npm run lint
 ```
 
-### Vistas (Resultado)
-## Listas
+## Vistas (Resultado)
+### Listas
 ![image](https://github.com/user-attachments/assets/c11f4372-ba50-477e-a2b3-080367280d50)
 
 ![image](https://github.com/user-attachments/assets/be520c1d-d48e-4127-a483-49c6542e51d7)
@@ -74,3 +74,8 @@ npm run lint
 ![image](https://github.com/user-attachments/assets/b45046ed-e092-437f-a1cb-42993394146e)
 
 ![image](https://github.com/user-attachments/assets/a8997f32-01ef-4539-8bb4-cf5a45d1c094)
+
+### Guardar/Editar
+![image](https://github.com/user-attachments/assets/5face09b-3496-4bf7-97d0-b7ec2fd4e850)
+
+![image](https://github.com/user-attachments/assets/752cefe7-3b22-493b-b07b-256b19ea8cdb)
