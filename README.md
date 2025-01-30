@@ -58,6 +58,7 @@ npm run lint
 ```
 
 ### Vistas (Resultado)
+## Listas
 ![image](https://github.com/user-attachments/assets/c11f4372-ba50-477e-a2b3-080367280d50)
 
 ![image](https://github.com/user-attachments/assets/be520c1d-d48e-4127-a483-49c6542e51d7)
@@ -70,3 +71,6 @@ npm run lint
 
 ![image](https://github.com/user-attachments/assets/b29ad7bc-7314-45d8-9962-2118fa597b8f)
 
+![image](https://github.com/user-attachments/assets/b45046ed-e092-437f-a1cb-42993394146e)
+
+![image](https://github.com/user-attachments/assets/a8997f32-01ef-4539-8bb4-cf5a45d1c094)
