@@ -18,6 +18,7 @@ export default {
       usuarioEditado: null,
       totalPages: 1,
       perPage: 5, //valor predeterminado para perPage
+      perPage_roles: 15,
     }
   },
   methods: {
@@ -40,10 +41,12 @@ export default {
         this.obtenerUsuarios(page)
       }
     },
-    async obtenerRoles() {
+    async obtenerRoles(page = 1) {
       try {
-        const response = await axios.get('/api/roles')
-        this.roles = response.data
+        const response = await axios.get(`/api/roles?page=${page}&per_page=${this.perPage_roles}`)
+
+        // Asignar las  desde la respuesta de la API
+        this.roles = response.data.data
       } catch (error) {
         console.error('Error al obtener roles:', error)
       }

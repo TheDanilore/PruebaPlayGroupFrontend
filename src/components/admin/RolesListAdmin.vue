@@ -17,6 +17,7 @@ export default {
       proveedorEditado: null,
       totalPages: 1,
       perPage: 5, //valor predeterminado para perPage
+      perPage_permisos: 40,
     }
   },
   methods: {
@@ -39,10 +40,10 @@ export default {
         this.obtenerRoles(page)
       }
     },
-    async obtenerPermisos() {
+    async obtenerPermisos(page = 1) {
       try {
-        const response = await axios.get('/api/permissions') // Asegúrate de tener una API para obtener permisos
-        this.permisos = response.data
+        const response = await axios.get(`/api/permissions?page=${page}&per_page=${this.perPage_permisos}`) // Asegúrate de tener una API para obtener permisos
+        this.permisos = response.data.data
       } catch (error) {
         console.error('Error al obtener permisos:', error)
       }

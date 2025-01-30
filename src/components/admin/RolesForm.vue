@@ -21,7 +21,7 @@ export default {
       rol: {
         name: '',
         guard_name: 'web',
-        estado: 'Activo',
+        estado: 'ACTIVO',
         permissions: [],
       },
       permisosSeleccionados: [], // Array para mantener los permisos seleccionados
@@ -37,6 +37,7 @@ export default {
           pattern: /^[A-Za-z0-9\s.,#-]+$/,
         },
       },
+      perPage_permisos: 40,
     }
   },
   computed: {
@@ -127,10 +128,10 @@ export default {
       this.errores.permissions = ''
       return true
     },
-    async obtenerPermisos() {
+    async obtenerPermisos(page = 1) {
       try {
-        const response = await axios.get('/api/permissions') // Asegúrate de tener una API para obtener permisos
-        this.permisos = response.data
+        const response = await axios.get(`/api/permissions?page=${page}&per_page=${this.perPage_permisos}`) // Asegúrate de tener una API para obtener permisos
+        this.permisos = response.data.data
       } catch (error) {
         console.error('Error al obtener permisos:', error)
       }
@@ -208,7 +209,7 @@ export default {
       return accion.charAt(0).toUpperCase() + accion.slice(1).replace(/-/g, ' ')
     },
     toggleEstado() {
-      this.rol.estado = this.rol.estado === 'Activo' ? 'Desactivado' : 'Activo'
+      this.rol.estado = this.rol.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'
     },
     async guardarRol() {
       try {
@@ -287,28 +288,16 @@ export default {
     <form @submit.prevent="guardarRol" class="form-container">
       <div class="form-group mb-3">
         <label for="name">Nombre</label>
-        <input
-          v-model="rol.name"
-          type="text"
-          id="name"
-          class="form-control"
-          :class="{ 'is-invalid': errores.name }"
-          required
-        />
+        <input v-model="rol.name" type="text" id="name" class="form-control" :class="{ 'is-invalid': errores.name }"
+          required />
         <div class="invalid-feedback" v-if="errores.name">
           {{ errores.name }}
         </div>
       </div>
       <div class="form-group mb-3">
         <label for="guard_name">Guard Name</label>
-        <input
-          v-model="rol.guard_name"
-          type="text"
-          id="guard_name"
-          class="form-control"
-          :class="{ 'is-invalid': errores.guard_nameame }"
-          required
-        />
+        <input v-model="rol.guard_name" type="text" id="guard_name" class="form-control"
+          :class="{ 'is-invalid': errores.guard_nameame }" required />
         <div class="invalid-feedback" v-if="errores.guard_name">
           {{ errores.guard_name }}
         </div>
@@ -316,13 +305,8 @@ export default {
       <div class="form-group mb-3">
         <label for="estadoToggle">Estado</label>
         <div class="form-check form-switch">
-          <input
-            type="checkbox"
-            class="form-check-input"
-            id="estadoToggle"
-            :checked="rol.estado === 'ACTIVO'"
-            @change="toggleEstado"
-          />
+          <input type="checkbox" class="form-check-input" id="estadoToggle" :checked="rol.estado === 'ACTIVO'"
+            @change="toggleEstado" />
           <label class="form-check-label" for="estadoToggle">{{ rol.estado }}</label>
         </div>
       </div>
@@ -331,13 +315,8 @@ export default {
 
         <!-- Checkbox principal para seleccionar todos los permisos -->
         <div class="form-check mb-3">
-          <input
-            type="checkbox"
-            class="form-check-input"
-            id="seleccionar-todos"
-            :checked="todosPermisosSeleccionados"
-            @change="toggleTodosPermisos"
-          />
+          <input type="checkbox" class="form-check-input" id="seleccionar-todos" :checked="todosPermisosSeleccionados"
+            @change="toggleTodosPermisos" />
           <label class="form-check-label" for="seleccionar-todos">
             <strong>Seleccionar todos los permisos</strong>
           </label>
@@ -345,21 +324,11 @@ export default {
 
         <!-- Lista de módulos y sus permisos -->
         <div class="permisos-container">
-          <div
-            v-for="(permisos, modulo) in permisosPorModulo"
-            :key="modulo"
-            class="modulo-container"
-          >
+          <div v-for="(permisos, modulo) in permisosPorModulo" :key="modulo" class="modulo-container">
             <!-- Cabecera del módulo -->
             <div class="modulo-header">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                :id="'modulo-' + modulo"
-                :checked="moduloCompleto(modulo)"
-                :indeterminate.prop="moduloParcial(modulo)"
-                @change="toggleModulo(modulo)"
-              />
+              <input type="checkbox" class="form-check-input" :id="'modulo-' + modulo" :checked="moduloCompleto(modulo)"
+                :indeterminate.prop="moduloParcial(modulo)" @change="toggleModulo(modulo)" />
               <label :for="'modulo-' + modulo" class="ms-2 text-primary">
                 {{ formatearNombreModulo(modulo) }}
               </label>
@@ -368,14 +337,8 @@ export default {
             <!-- Permisos del módulo -->
             <div class="permisos-list">
               <div v-for="permiso in permisos" :key="permiso.id" class="permiso-item">
-                <input
-                  type="checkbox"
-                  class="form-check-input"
-                  :id="'permiso-' + permiso.id"
-                  :value="permiso.id"
-                  :checked="permisosSeleccionados.includes(permiso.id)"
-                  @change="togglePermiso(permiso.id)"
-                />
+                <input type="checkbox" class="form-check-input" :id="'permiso-' + permiso.id" :value="permiso.id"
+                  :checked="permisosSeleccionados.includes(permiso.id)" @change="togglePermiso(permiso.id)" />
                 <label :for="'permiso-' + permiso.id" class="ms-2">
                   {{ formatearNombrePermiso(permiso.name) }}
                 </label>

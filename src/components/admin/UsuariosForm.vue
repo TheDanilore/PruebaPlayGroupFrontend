@@ -29,7 +29,7 @@ export default {
         avatar: null,
         avatarUrl: '', // URL actual del avatar
         avatarPreview: '',
-        estado: 'Activo',
+        estado: 'ACTIVO',
         roles: [],
       },
       validaciones: {
@@ -51,6 +51,7 @@ export default {
       },
       roles: [],
       isDragging: false,
+      perPage_roles: 15,
     }
   },
   watch: {
@@ -164,10 +165,12 @@ export default {
       this.errores.password = ''
       return true
     },
-    async obtenerRoles() {
+    async obtenerRoles(page = 1) {
       try {
-        const response = await axios.get('/api/roles')
-        this.roles = response.data
+        const response = await axios.get(`/api/roles?page=${page}&per_page=${this.perPage_roles}`)
+
+        // Asignar las  desde la respuesta de la API
+        this.roles = response.data.data
       } catch (error) {
         console.error('Error al obtener roles:', error)
       }
@@ -210,7 +213,7 @@ export default {
       }
     },
     toggleEstado() {
-      this.usuario.estado = this.usuario.estado === 'Activo' ? 'Desactivado' : 'Activo'
+      this.usuario.estado = this.usuario.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'
     },
     async guardarUsuario() {
       try {
@@ -278,54 +281,32 @@ export default {
     <form @submit.prevent="guardarUsuario" class="form-container">
       <div class="form-group mb-3">
         <label for="name">Nombre</label>
-        <input
-          v-model="usuario.name"
-          type="text"
-          id="name"
-          class="form-control"
-          :class="{ 'is-invalid': errores.name }"
-          required
-        />
+        <input v-model="usuario.name" type="text" id="name" class="form-control" :class="{ 'is-invalid': errores.name }"
+          required />
         <div class="invalid-feedback" v-if="errores.name">
           {{ errores.name }}
         </div>
       </div>
       <div class="form-group mb-3">
         <label for="email">Email</label>
-        <input
-          v-model="usuario.email"
-          type="email"
-          id="email"
-          class="form-control"
-          :class="{ 'is-invalid': errores.email }"
-          required
-        />
+        <input v-model="usuario.email" type="email" id="email" class="form-control"
+          :class="{ 'is-invalid': errores.email }" required />
         <div class="invalid-feedback" v-if="errores.email">
           {{ errores.email }}
         </div>
       </div>
       <div class="form-group mb-3">
         <label for="password">contraseña</label>
-        <input
-          v-model="usuario.password"
-          type="password"
-          id="password"
-          class="form-control"
-          :class="{ 'is-invalid': errores.password }"
-        />
+        <input v-model="usuario.password" type="password" id="password" class="form-control"
+          :class="{ 'is-invalid': errores.password }" />
         <div class="invalid-feedback" v-if="errores.password">
           {{ errores.password }}
         </div>
       </div>
       <div class="form-group mb-3">
         <label for="password_confirmation">Confirmar contraseña</label>
-        <input
-          v-model="usuario.password_confirmation"
-          type="password"
-          id="password_confirmation"
-          class="form-control"
-          :class="{ 'is-invalid': errores.password_confirmation }"
-        />
+        <input v-model="usuario.password_confirmation" type="password" id="password_confirmation" class="form-control"
+          :class="{ 'is-invalid': errores.password_confirmation }" />
         <div class="invalid-feedback" v-if="errores.password_confirmation">
           {{ errores.password_confirmation }}
         </div>
@@ -334,31 +315,15 @@ export default {
       <!-- Área de arrastre para el avatar con preview -->
       <div class="form-group mb-3" @dragover.prevent @drop.prevent="handleDrop">
         <label for="avatar">Avatar</label>
-        <div
-          class="drop-area"
-          :class="{ highlight: isDragging }"
-          @dragenter="isDragging = true"
-          @dragleave="isDragging = false"
-          @dragover.prevent
-          @click="$refs.avatarInput.click()"
-        >
+        <div class="drop-area" :class="{ highlight: isDragging }" @dragenter="isDragging = true"
+          @dragleave="isDragging = false" @dragover.prevent @click="$refs.avatarInput.click()">
           <template v-if="usuario.avatarPreview || usuario.avatarUrl">
-            <img
-              :src="usuario.avatarPreview || usuario.avatarUrl"
-              alt="Avatar Preview"
-              class="preview img-fluid"
-              style="max-width: 200px; max-height: 200px"
-            />
+            <img :src="usuario.avatarPreview || usuario.avatarUrl" alt="Avatar Preview" class="preview img-fluid"
+              style="max-width: 200px; max-height: 200px" />
           </template>
           <p v-else>Arrastra y suelta una imagen aquí o haz clic para seleccionar</p>
         </div>
-        <input
-          type="file"
-          ref="avatarInput"
-          @change="handleFileUpload"
-          accept="image/*"
-          class="d-none"
-        />
+        <input type="file" ref="avatarInput" @change="handleFileUpload" accept="image/*" class="d-none" />
         <div class="invalid-feedback" v-if="errores.avatar">
           {{ errores.avatar }}
         </div>
@@ -375,13 +340,8 @@ export default {
       <div class="form-group mb-3">
         <label for="estadoToggle">Estado</label>
         <div class="form-check form-switch">
-          <input
-            type="checkbox"
-            class="form-check-input"
-            id="estadoToggle"
-            :checked="usuario.estado === 'ACTIVO'"
-            @change="toggleEstado"
-          />
+          <input type="checkbox" class="form-check-input" id="estadoToggle" :checked="usuario.estado === 'ACTIVO'"
+            @change="toggleEstado" />
           <label class="form-check-label" for="estadoToggle">{{ usuario.estado }}</label>
         </div>
       </div>
